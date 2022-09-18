@@ -1,0 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cu116
+torch==1.12.1
+torchvision
+torchaudio
+
+ipython>=8.5.0
+matplotlib>=3.6.0
