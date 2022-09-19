@@ -1,5 +1,8 @@
-# python cache
 **/__pycache__/
+.vscode/
 
 # root file system in the container
 docker/rootfs/
+
+data/
+logs/

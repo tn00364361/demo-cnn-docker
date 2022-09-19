@@ -4,9 +4,23 @@ ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONPATH=/root/.local/lib/python3.10/site-packages:$PYTHONPATH
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
+# add libglvnd support (More info: https://hub.docker.com/r/nvidia/opengl)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget ca-certificates && \
-    apt-get install -y --no-install-recommends python3 python3-pyqt5.qtsvg
+    apt-get install -y --no-install-recommends \
+        libglvnd0 \
+        libgl1 \
+        libglx0 \
+        libegl1 \
+        libgles2
+
+# TODO: install tzdata?
+
+# python base
+RUN apt-get install -y --no-install-recommends \
+        wget \
+        ca-certificates \
+        python3 \
+        python3-pyqt5.qtsvg
 
 RUN wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py && \
     python3 /tmp/get-pip.py --user
