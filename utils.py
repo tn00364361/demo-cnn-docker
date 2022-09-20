@@ -20,26 +20,26 @@ class SimpleCNN(nn.Module):
             bias=False
         )
 
-        # [n, in_channels, 32, 32]
-        # -> [n, c0, 16, 16] -> [n, 2 * c0, 8, 8]
-        # -> [n, 4 * c0, 4, 4] -> [n, 8 * c0, 2, 2]
+        # [n, in_channels, 32, 32] -> [n, in_channels * 4, 16, 16]
+        # -> [n, c0, 8, 8] -> [n, 2 * c0, 4, 4] -> [n, 4 * c0, 2, 2]
         self.layers = nn.ModuleList()
-        c_in = self.in_channels
-        for k in range(4):
+        c_in = self.in_channels * 4
+        for k in range(3):
             c_out = 2**k * c0
             self.layers.append(_conv2d(c_in, c_out))
             self.layers.append(nn.BatchNorm2d(c_out))
             self.layers.append(nn.ReLU())
             self.layers.append(nn.Dropout2d())
-
             c_in = c_out
 
         # [n, 8 * c0, 2, 2] -> [n, 32 * c0] -> [n, 10]
         self.layers.append(nn.Flatten())
-        self.layers.append(nn.Linear(32 * c0, 10))
+        self.layers.append(nn.Linear(16 * c0, 10))
 
     def forward(self, x):
-        y = x.reshape(-1, self.in_channels, 32, 32)
+        y = x.reshape(-1, self.in_channels, 16, 2, 16, 2)
+        y = y.permute(0, 1, 3, 5, 2, 4)
+        y = y.reshape(-1, self.in_channels * 4, 16, 16)
         for layer in self.layers:
             y = layer(y)
 
