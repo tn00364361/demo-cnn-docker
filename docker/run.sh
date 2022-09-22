@@ -22,6 +22,7 @@ docker run -it --rm \
     -v /run/user/$(id -u):/run/user/$(id -u) \
     -v /etc/timezone:/etc/timezone:ro \
     -v /etc/localtime:/etc/localtime:ro \
+    -v /usr/share/zoneinfo:/usr/share/zoneinfo:ro \
     -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
     -v $ROOTFS/etc/passwd:/etc/passwd:ro \
     -v $ROOTFS/etc/group:/etc/group:ro \
