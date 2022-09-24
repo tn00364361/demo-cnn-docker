@@ -13,8 +13,6 @@ RUN apt-get update && \
         libegl1 \
         libgles2
 
-# TODO: install tzdata?
-
 # python base
 RUN apt-get install -y --no-install-recommends \
         wget \

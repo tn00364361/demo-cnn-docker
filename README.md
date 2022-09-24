@@ -52,6 +52,8 @@ Notes:
 
     The username and hostname should become yellow and the working directory should be `/my_workspace`, indicating that you are now in a container. Run `ll` to verify that you can see the host files.
 
+    In addition, run `nvidia-smi` in the container to veirfy that the GPU is visible in the container.
+
 ## Details
 
 
@@ -139,6 +141,20 @@ Notes:
             -v $ROOTFS/etc/passwd:/etc/passwd:ro \
             -v $ROOTFS/etc/group:/etc/group:ro \
             -v $ROOTFS/home/user:$HOME \
+            ...
+            demo-cnn
+        ...
+        ```
+
+    - GPU access
+
+        ```bash
+        #!/usr/bin/env bash
+        ...
+        [ -z $1 ] && GPU="all" || GPU=$1
+        ...
+        docker run -it --rm \
+            --gpus '"device='$GPU'"' \
             ...
             demo-cnn
         ...
