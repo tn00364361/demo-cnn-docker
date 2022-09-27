@@ -44,7 +44,7 @@ done
 ############################################################
 ROOTFS=$(pwd)/docker/rootfs
 [ ! -f $ROOTFS/etc/passwd ] && echo $(getent passwd $(id -un)) > $ROOTFS/etc/passwd
-[ ! -f $ROOTFS/etc/group ] && echo $(getent group $(id -un)) > $ROOTFS/etc/group
+[ ! -f $ROOTFS/etc/group ] && echo $(getent group $(id -gn)) > $ROOTFS/etc/group
 
 xhost +local:
 

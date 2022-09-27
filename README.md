@@ -107,7 +107,7 @@ Notes:
 
     When developing custom/new algorithms, one **almost always** wants to write their own Dockerfile instead of using a prebuilt image from Dockerh Hub. A typical pipeline may look like this:
 
-    1. Figure out the dependencies of the project.
+    1. Figure out dependencies of the project.
     2. Write a [Dockerfile](docker/Dockerfile) with all dependencies.
     3. [Build](docker/build.sh) the image.
     4. [Launch](docker/run.sh) a container.
