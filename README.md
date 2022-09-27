@@ -47,8 +47,8 @@ Notes:
 3. Launch a container
 
     ```bash
-    $ ./docker/run.sh           # use all GPUs (default)
-    $ ./docker/run.sh -g 0      # use GPU0 only
+    $ ./docker/run.sh           # use GPU0 only (default)
+    $ ./docker/run.sh -g all    # use all GPU(s)
     $ ./docker/run.sh -g 2,3    # use GPU2 and GPU3
     ```
 
@@ -112,7 +112,7 @@ Notes:
     3. [Build](docker/build.sh) the image.
     4. [Launch](docker/run.sh) a container.
     5. Develop and test your algorithm in the container.
-    6. If new dependency appears along the way, go back to 1.
+    6. If new dependency appears during development, go back to 1 and reiterate.
 
     In addition, it is a good pratice to explicitly specify the software versions. For example, when providing a [`requirements.txt`](requirements.txt) for PIP, one should prefer `==` or `>=X,<Y` over `>=` or no versioning at all.
 
@@ -150,7 +150,7 @@ Notes:
 
         ```bash
         #!/usr/bin/env bash
-
+        ...
         ROOTFS=$(pwd)/docker/rootfs
         [ ! -f $ROOTFS/etc/passwd ] && echo $(getent passwd $(id -un)) > $ROOTFS/etc/passwd
         [ ! -f $ROOTFS/etc/group ] && echo $(getent group $(id -un)) > $ROOTFS/etc/group
@@ -172,7 +172,7 @@ Notes:
         ```bash
         #!/usr/bin/env bash
         ...
-        [ -z $1 ] && GPU="all" || GPU=$1
+        [ -z $GPU ] && GPU=all
         ...
         docker run -it --rm \
             --gpus '"device='$GPU'"' \

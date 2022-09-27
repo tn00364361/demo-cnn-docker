@@ -6,10 +6,10 @@ Help()
 {
     # Display Help
     echo "Launch a container."
-    echo "Syntax: ./docker/run.sh [-g GPU_IDs|-s SHM_SIZE|-i IPC_MODE|-n NAME|-h]"
+    echo "Syntax: ./docker/run.sh [-g DEVICES|-s SHM_SIZE|-i IPC_MODE|-n NAME|-h]"
     echo
     echo "options:"
-    echo "g     Specify the GPU ID(s).      [all]"
+    echo "g     Specify the GPU ID(s).      [0]"
     echo "s     SHM size.                   [4g]"
     echo "n     Name of the container       [demo-cnn-\$(openssl rand -hex 4)]"
     echo "i     IPC mode.                   [host]"
@@ -34,7 +34,7 @@ done
 ############################################################
 # Default values                                           #
 ############################################################
-[ -z $GPU ] && GPU=all
+[ -z $GPU ] && GPU=0
 [ -z $SHM ] && SHM=4g
 [ -z $IPC ] && IPC=host
 [ -z $NAME ] && NAME=demo-cnn-$(openssl rand -hex 4)
