@@ -3,4 +3,4 @@
 docker build \
     -t demo-cnn \
     -f docker/Dockerfile \
-    .
+    $(pwd)

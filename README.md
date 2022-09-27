@@ -4,11 +4,13 @@ Docker enables portability and reproducibility of a codebase. This repository se
 
 Notes:
 
-- Instead of developing the ultimate neural network. the focus of this repository is to show how one can train a neural network in Docker containers. In other words, contents in `train.py` and `utils.py` is out of scope.
+- Instead of developing the ultimate neural network, the focus of this repository is to show how one can train a neural network in Docker containers. In other words, contents in `train.py` and `utils.py` are out of scope.
 
 - Although this repository only uses Python, one can extend the idea to arbitrary languages/tools.
 
-- In addition to [Docker Hub](https://hub.docker.com/), [NGC](https://catalog.ngc.nvidia.com/containers) is also a popular place (i.e. registry) for pulling prebuild images. One can also host private registries using [Red Hat Quay](https://quay.io/) or [Google Cloud Container Registry](https://cloud.google.com/container-registry).
+- In addition to [Docker Hub](https://hub.docker.com/), [NGC](https://catalog.ngc.nvidia.com/containers) is also a popular place (i.e. registry) for pulling prebuilt images. One can also host private registries using [Red Hat Quay](https://quay.io/) or [Google Cloud Container Registry](https://cloud.google.com/container-registry).
+
+- Any feedback is welcome! Feel free to start a [discussion](https://github.com/tn00364361/demo-cnn-docker/discussions).
 
 ## Prerequisites
 
@@ -59,7 +61,7 @@ Notes:
 
 - Differences between images and containers
 
-    An image can be seen as a snapshot of an environment. It encapsulates all dependencies, including software packages and environmental variables, in a static state. On can pull images from [Docker Hub](https://hub.docker.com/). For example:
+    An image can be seen as a snapshot of an environment. It encapsulates all dependencies, including software packages and environmental variables, in a static state. On can pull prebuilt images from [Docker Hub](https://hub.docker.com/). For example:
 
     ```bash
     $ docker pull ubuntu:20.04
@@ -72,6 +74,14 @@ Notes:
     ```
 
     A more sophisticated example can be found in the [run script](docker/run.sh) which will be explained later.
+
+- Running as the `root` user or using `sudo` in containers
+
+    **TL;DR: Don't**.
+
+    Once the image is built, one should lauch containers using the `-u` flag, as shown in the [run script](docker/run.sh). This allows the files written to have the correct ownership, instead of to be owned by the `root` user.
+
+    If you want to install packages or change system cofiguration files, do them in the Dockerfile.
 
 - `docker/rootfs`
 
@@ -87,15 +97,24 @@ Notes:
 
     - `docker/rootfs/home/user`
 
-        This is the home directory to be mounted in the container. Mounting it allows the user in the container to keep files like Bash/Python history and some common configuration files.
+        This is the home directory to be mounted to a container. Mounting it allows the user in the container to keep files like Bash/Python history and some common configuration files.
 
 - [`docker/Dockerfile`](docker/Dockerfile)
 
     This file containes instructions to build the desired image. Starting from a base image, environmental variables are set, and packages are installed.
 
-    It is a good pratice to explicitly specify the software versions. For example, when providing a [`requirements.txt`](requirements.txt) for PIP, one should prefer `==` or `>=X,<Y` over `>=` or no versioning at all.
+    When developing custom/new algorithms, one **almost always** wants to write their own Dockerfile instead of using a prebuilt image from Dockerh Hub. A typical pipeline may look like this:
 
-    Another example is when cloning a thirdparty repository as a dependency, one should always checkout to a particular tag or commit.
+    1. Figure out the dependencies of the project.
+    2. Write a [Dockerfile](docker/Dockerfile) with all dependencies.
+    3. [Build](docker/build.sh) the image.
+    4. [Launch](docker/run.sh) a container.
+    5. Develop and test your algorithm in the container.
+    6. If new dependency appears along the way, go back to 1.
+
+    In addition, it is a good pratice to explicitly specify the software versions. For example, when providing a [`requirements.txt`](requirements.txt) for PIP, one should prefer `==` or `>=X,<Y` over `>=` or no versioning at all.
+
+    Another thing to pay attention to is that when cloning a thirdparty repository as a dependency, one should checkout to a particular tag or commit in the Dockerfile.
 
 - [`docker/build.sh`](docker/build.sh)
 
@@ -103,7 +122,7 @@ Notes:
 
 - [`docker/run.sh`](docker/run.sh)
 
-    This script launchs a container from the built image. In short, this script handles GUI- and user-related stuff.
+    This script launchs a container from the built image. In short, this script handles GUI- and user-related stuff, in addition to accessing GPU(s) for training neural networks.
 
     - GUI
 
