@@ -47,10 +47,12 @@ Notes:
 3. Launch a container
 
     ```bash
-    $ ./docker/run.sh       # use all GPUs (default)
-    $ ./docker/run.sh 0     # use GPU0 only
-    $ ./docker/run.sh 2,3   # use GPU2 and GPU3
+    $ ./docker/run.sh           # use all GPUs (default)
+    $ ./docker/run.sh -g 0      # use GPU0 only
+    $ ./docker/run.sh -g 2,3    # use GPU2 and GPU3
     ```
+
+    See [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html#gpu-enumeration) for valid values for GPU ID(s).
 
     The username and hostname should become yellow and the working directory should be `/my_workspace`, indicating that you are now in a container. Run `ll` to verify that you can see the host files.
 

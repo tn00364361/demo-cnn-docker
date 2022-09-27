@@ -1,19 +1,59 @@
 #!/usr/bin/env bash
+############################################################
+# Help                                                     #
+############################################################
+Help()
+{
+    # Display Help
+    echo "Launch a container."
+    echo "Syntax: ./docker/run.sh [-g GPU_IDs|-s SHM_SIZE|-i IPC_MODE|-n NAME|-h]"
+    echo
+    echo "options:"
+    echo "g     Specify the GPU ID(s).      [all]"
+    echo "s     SHM size.                   [4g]"
+    echo "n     Name of the container       [demo-cnn-\$(openssl rand -hex 4)]"
+    echo "i     IPC mode.                   [host]"
+    echo "h     Print this Help."
+}
 
+while getopts ":g:s:i:n:h" arg; do
+    case $arg in
+        g)  GPU=$OPTARG;;
+        s)  SHM=$OPTARG;;
+        i)  IPC=$OPTARG;;
+        n)  NAME=$OPTARG;;
+        h)  # display Help
+            Help
+            exit;;
+        *)  # invalid option
+            echo "Error: Invalid option"
+            exit;;
+    esac
+done
+
+############################################################
+# Default values                                           #
+############################################################
+[ -z $GPU ] && GPU=all
+[ -z $SHM ] && SHM=4g
+[ -z $IPC ] && IPC=host
+[ -z $NAME ] && NAME=demo-cnn-$(openssl rand -hex 4)
+
+############################################################
+# Main program                                             #
+############################################################
 ROOTFS=$(pwd)/docker/rootfs
 [ ! -f $ROOTFS/etc/passwd ] && echo $(getent passwd $(id -un)) > $ROOTFS/etc/passwd
 [ ! -f $ROOTFS/etc/group ] && echo $(getent group $(id -un)) > $ROOTFS/etc/group
-
-[ -z $1 ] && GPU="all" || GPU=$1
 
 xhost +local:
 
 docker run -it --rm \
     --gpus '"device='$GPU'"' \
-    --name demo-cnn-$(openssl rand -hex 4) \
+    --name $NAME \
     --hostname $(hostname) \
-    --shm-size 4g \
-    --ipc host \
+    --shm-size $SHM \
+    --ipc $IPC \
     -e DISPLAY \
     -e QT_X11_NO_MITSHM=1 \
     -e HOME \
