@@ -79,7 +79,7 @@ Notes:
 
     **TL;DR: Don't**.
 
-    Once the image is built, one should lauch containers using the `-u` flag, as shown in the [run script](docker/run.sh). This allows the files written to have the correct ownership, instead of to be owned by the `root` user.
+    Once the image is built, one should launch containers using the `-u` flag, as shown in the [run script](docker/run.sh). This allows the written files to have the correct ownership, instead of to be owned by the `root` user.
 
     If you want to install packages or change system cofiguration files, do them in the Dockerfile.
 
