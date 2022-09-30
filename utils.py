@@ -3,27 +3,32 @@ import logging
 import torch
 
 
-class ConvBN2d(torch.nn.Module):
-    def __init__(self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: int = 3
-        ) -> None:
+class MyCustomBlock(torch.nn.Module):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
 
-        self.conv = torch.nn.Conv2d(
-            in_channels,
+        self.layers = torch.nn.ModuleList()
+
+        self.layers.append(DWT2())
+        self.layers.append(torch.nn.Conv2d(
+            in_channels * 4,
             out_channels,
-            kernel_size,
-            stride=2,
-            padding=kernel_size // 2,
+            kernel_size=3,
+            stride=1,
+            padding=1,
             padding_mode='circular',
             bias=False
-        )
-        self.bn = torch.nn.BatchNorm2d(out_channels)
+        ))
+        self.layers.append(torch.nn.BatchNorm2d(out_channels))
+        self.layers.append(torch.nn.ReLU(inplace=True))
+        self.layers.append(torch.nn.Dropout2d())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.bn(self.conv(x))
+        # (n, in_channels, h, w) -> (n, out_channels, h // 2, w // 2)
+        for layer in self.layers:
+            x = layer(x)
+
+        return x
 
 
 class DWT2(torch.nn.Module):
@@ -41,6 +46,7 @@ class DWT2(torch.nn.Module):
         ], dtype=torch.float32, requires_grad=False).unsqueeze(0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # (n, c, h, w) -> (n, 4 * c, h // 2, w // 2)
         if self.haar_basis != x.device:
             self.haar_basis = self.haar_basis.to(x.device)
 
@@ -54,34 +60,25 @@ class DWT2(torch.nn.Module):
 
 
 class SimpleCNN(torch.nn.Module):
-    def __init__(self, c0: int = 32) -> None:
+    def __init__(self, c0: int = 16, num_classes: int = 10) -> None:
         super().__init__()
 
-        # [n, 1, 32, 32] -> [n, 4, 16, 16]
-        self.dwt2 = DWT2()
-
-        # [n, 4, 16, 16] -> [n, c0, 8, 8] -> [n, 2 * c0, 4, 4] -> [n, 4 * c0, 2, 2]
         self.layers = torch.nn.ModuleList()
-        c_in = 4
-        for k in range(3):
-            c_out = 2**k * c0
-            self.layers.append(ConvBN2d(c_in, c_out))
-            self.layers.append(torch.nn.ReLU())
-            self.layers.append(torch.nn.Dropout2d())
-            c_in = c_out
 
-        # [n, 4 * c0, 2, 2] -> [n, 16 * c0] -> [n, 10]
+        self.layers.append(MyCustomBlock(1, c0))            # (n, c0, 16, 16)
+        self.layers.append(MyCustomBlock(1 * c0, 2 * c0))   # (n, 2 * c0, 8, 8)
+        self.layers.append(MyCustomBlock(2 * c0, 4 * c0))   # (n, 4 * c0, 4, 4)
+        self.layers.append(MyCustomBlock(4 * c0, 8 * c0))   # (n, 8 * c0, 2, 2)
+
+        # (n, 8 * c0, 2, 2) -> (n, 32 * c0) -> (n, num_classes)
         self.layers.append(torch.nn.Flatten())
-        self.layers.append(torch.nn.Linear(16 * c0, 10))
+        self.layers.append(torch.nn.Linear(32 * c0, num_classes))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        y = self.dwt2(x)
-
-        # regular convolutional layers
         for layer in self.layers:
-            y = layer(y)
+            x = layer(x)
 
-        return y
+        return x
 
 
 if __name__ == '__main__':
