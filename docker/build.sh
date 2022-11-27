@@ -9,9 +9,14 @@ Help()
     echo "Syntax: ./docker/build.sh [-t TAG|-h]"
     echo
     echo "options:"
-    echo "t     Tag of the image.       [demo-cnn]"
+    echo "t     Tag of the image.       [demo-cnn:latest]"
     echo "h     Print this Help."
 }
+
+############################################################
+# Default values                                           #
+############################################################
+TAG=demo-cnn:latest
 
 while getopts ":t:h" arg; do
     case $arg in
@@ -24,8 +29,6 @@ while getopts ":t:h" arg; do
             exit;;
     esac
 done
-
-[ -z $TAG ] && TAG=demo-cnn
 
 docker build \
     -t $TAG \

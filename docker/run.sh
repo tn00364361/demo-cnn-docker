@@ -6,22 +6,24 @@ Help()
 {
     # Display Help
     echo "Launch a container."
-    echo "Syntax: ./docker/run.sh [-g DEVICES|-s SHM_SIZE|-i IPC_MODE|-n NAME|-h]"
+    echo "Syntax: ./docker/run.sh [-option VALUE|-h]"
     echo
     echo "options:"
-    echo "g     Specify the GPU ID(s).      [0]"
-    echo "s     SHM size.                   [4g]"
+    echo "d     Specify the GPU ID(s).      [0]"
     echo "n     Name of the container       [demo-cnn-\$(openssl rand -hex 4)]"
-    echo "i     IPC mode.                   [host]"
     echo "h     Print this Help."
 }
 
-while getopts ":g:s:i:n:h" arg; do
+############################################################
+# Default values                                           #
+############################################################
+DEVICES=0
+CONTAINER_NAME=demo-cnn-$(openssl rand -hex 4)
+
+while getopts ":d:n:h" arg; do
     case $arg in
-        g)  GPU=$OPTARG;;
-        s)  SHM=$OPTARG;;
-        i)  IPC=$OPTARG;;
-        n)  NAME=$OPTARG;;
+        d)  DEVICES=$OPTARG;;
+        n)  CONTAINER_NAME=$OPTARG;;
         h)  # display Help
             Help
             exit;;
@@ -32,43 +34,37 @@ while getopts ":g:s:i:n:h" arg; do
 done
 
 ############################################################
-# Default values                                           #
-############################################################
-[ -z $GPU ] && GPU=0
-[ -z $SHM ] && SHM=4g
-[ -z $IPC ] && IPC=host
-[ -z $NAME ] && NAME=demo-cnn-$(openssl rand -hex 4)
-
-############################################################
 # Main program                                             #
 ############################################################
-ROOTFS=$(pwd)/docker/rootfs
-[ ! -f $ROOTFS/etc/passwd ] && echo $(getent passwd $(id -un)) > $ROOTFS/etc/passwd
-[ ! -f $ROOTFS/etc/group ] && echo $(getent group $(id -gn)) > $ROOTFS/etc/group
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+PASSWD_FILE=$(mktemp) && echo $(getent passwd $USER_ID) > $PASSWD_FILE
+GROUP_FILE=$(mktemp) && echo $(getent group $GROUP_ID) > $GROUP_FILE
 
 xhost +local:
 
 docker run -it --rm \
-    --gpus '"device='$GPU'"' \
-    --name $NAME \
+    --gpus '"device='$DEVICES'"' \
+    --name $CONTAINER_NAME \
     --hostname $(hostname) \
-    --shm-size $SHM \
-    --ipc $IPC \
+    --ipc host \
     -e DISPLAY \
     -e QT_X11_NO_MITSHM=1 \
     -e HOME \
-    -e XDG_RUNTIME_DIR=/run/user/$(id -u) \
-    -u $(id -u):$(id -g) \
-    -v /run/user/$(id -u):/run/user/$(id -u) \
+    -e XDG_RUNTIME_DIR=/run/user/$USER_ID \
+    -u $USER_ID:$GROUP_ID \
+    -v /run/user/$USER_ID:/run/user/$USER_ID \
     -v /etc/timezone:/etc/timezone:ro \
     -v /etc/localtime:/etc/localtime:ro \
     -v /usr/share/zoneinfo:/usr/share/zoneinfo:ro \
-    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    -v $ROOTFS/etc/passwd:/etc/passwd:ro \
-    -v $ROOTFS/etc/group:/etc/group:ro \
-    -v $ROOTFS/home/user:$HOME \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v $PASSWD_FILE:/etc/passwd:ro \
+    -v $GROUP_FILE:/etc/group:ro \
+    -v $(pwd)/docker/home:$HOME \
     -v $(pwd):/my_workspace \
     -w /my_workspace \
     demo-cnn
 
 xhost -local:
+
+rm -f $PASSWD_FILE $GROUP_FILE

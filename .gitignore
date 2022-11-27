@@ -2,7 +2,7 @@
 .vscode/
 
 # root file system in the container
-docker/rootfs/
+docker/home/
 
 data/
 logs/
