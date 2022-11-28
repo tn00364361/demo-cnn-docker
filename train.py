@@ -5,7 +5,7 @@ import logging
 
 import torch
 from torch.utils.data import DataLoader
-import torchvision
+import torchvision as tv
 import utils
 
 
@@ -17,8 +17,10 @@ if __name__ == '__main__':
                         help='Batch size in each training step. (default: 500)')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='Learning rate. (default: 1e-3)')
+    parser.add_argument('--num_workers', '-w', type=int, default=4)
     parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('--fashion', dest='fashion', action='store_true')
+    parser.add_argument('--fashion', dest='fashion', action='store_true',
+                        help='If True, train on FashionMNIST; otherwise use CIFAR10.')
     args = parser.parse_args()
 
     # TODO: set the correct log path
@@ -27,29 +29,51 @@ if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),          # PILImage, images of range [0, 1].
-        torchvision.transforms.Pad(2),              # 28x28 -> 32x32
-        torchvision.transforms.Normalize(0.5, 0.5)  # normalize
-    ])
-
     if args.fashion:
-        mnist = torchvision.datasets.FashionMNIST
+        mnist = tv.datasets.FashionMNIST
+        in_channels = 1
+        train_transform = tv.transforms.Compose([
+            tv.transforms.ToTensor(),               # PILImage, images of range [0, 1].
+            tv.transforms.Pad(2),                   # 28x28 -> 32x32
+            tv.transforms.Normalize(0.5, 0.5)       # normalize
+        ])
+        test_transform = train_transform
     else:
-        mnist = torchvision.datasets.MNIST
+        mnist = tv.datasets.CIFAR10
+        in_channels = 3
+        train_transform = tv.transforms.Compose([
+            tv.transforms.ToTensor(),
+            # tv.transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),
+            tv.transforms.RandomHorizontalFlip(),
+            tv.transforms.Normalize(0.5, 0.5)
+        ])
+        test_transform = tv.transforms.Compose([
+            tv.transforms.ToTensor(),
+            tv.transforms.Normalize(0.5, 0.5)
+        ])
 
-    train_ds = mnist(root=args.data_dir, download=True, transform=transform, train=True)
-    test_ds = mnist(root=args.data_dir, download=True, transform=transform, train=False)
+    train_ds = mnist(root=args.data_dir, download=True, transform=train_transform, train=True)
+    test_ds = mnist(root=args.data_dir, download=True, transform=test_transform, train=False)
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers
+    )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers
+    )
 
     logging.info(f'# training samples = {len(train_ds):d}')
     logging.info(f'# test samples = {len(test_ds):d}')
 
     # Using multiple GPUs
     model = torch.nn.DataParallel(
-        utils.SimpleCNN(),
+        utils.SimpleCNN(in_channels=in_channels),
         device_ids=range(torch.cuda.device_count())
     ).to(device)
 
