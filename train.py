@@ -2,6 +2,7 @@
 from time import perf_counter
 import argparse
 import logging
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -9,27 +10,13 @@ import torchvision as tv
 import utils
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--num_epochs', type=int, default=50,
-                        help='Number of epochs. (default: 50)')
-    parser.add_argument('--batch_size', type=int, default=500,
-                        help='Batch size in each training step. (default: 500)')
-    parser.add_argument('--lr', type=float, default=1e-3,
-                        help='Learning rate. (default: 1e-3)')
-    parser.add_argument('--num_workers', '-w', type=int, default=4)
-    parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('--fashion', dest='fashion', action='store_true',
-                        help='If True, train on FashionMNIST; otherwise use CIFAR10.')
-    args = parser.parse_args()
-
-    # TODO: set the correct log path
-    logging.basicConfig(filename='./logs/test.log', filemode='w', level=logging.DEBUG)
-    logging.info(args)
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    if args.fashion:
+def get_data_loaders(
+        data_dir: Path,
+        batch_size: int,
+        num_workers: int,
+        fashion: bool,
+    ) -> tuple[DataLoader, DataLoader, int]:
+    if fashion:
         mnist = tv.datasets.FashionMNIST
         in_channels = 1
         train_transform = tv.transforms.Compose([
@@ -52,24 +39,52 @@ if __name__ == '__main__':
             tv.transforms.Normalize(0.5, 0.5)
         ])
 
-    train_ds = mnist(root=args.data_dir, download=True, transform=train_transform, train=True)
-    test_ds = mnist(root=args.data_dir, download=True, transform=test_transform, train=False)
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers
-    )
-    test_loader = DataLoader(
-        test_ds,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers
-    )
+    train_ds = mnist(root=data_dir, download=True, transform=train_transform, train=True)
+    test_ds = mnist(root=data_dir, download=True, transform=test_transform, train=False)
 
     logging.info(f'# training samples = {len(train_ds):d}')
     logging.info(f'# test samples = {len(test_ds):d}')
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers
+    )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers
+    )
+
+    return train_loader, test_loader, in_channels
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_epochs', type=int, default=50,
+                        help='Number of epochs. (default: 50)')
+    parser.add_argument('--batch_size', type=int, default=500,
+                        help='Batch size in each training step. (default: 500)')
+    parser.add_argument('--lr', type=float, default=1e-3,
+                        help='Learning rate. (default: 1e-3)')
+    parser.add_argument('--num_workers', '-w', type=int, default=4)
+    parser.add_argument('--data_dir', type=str, default='./data')
+    parser.add_argument('--fashion', dest='fashion', action='store_true',
+                        help='If True, train on FashionMNIST; otherwise use CIFAR10.')
+    parser.add_argument('--log_level', type=str, default='info',
+                        choices=['debug', 'info', 'warning', 'error', 'critical'])
+    args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()))
+    logging.info(args)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    train_loader, test_loader, in_channels = get_data_loaders(
+        args.data_dir, args.batch_size, args.num_workers, args.fashion
+    )
 
     # Using multiple GPUs
     model = torch.nn.DataParallel(
