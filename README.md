@@ -1,3 +1,5 @@
+# This repo's approach is out-of-date. Use [Docker compose](https://docs.docker.com/compose/), [Devcontainers](https://code.visualstudio.com/docs/devcontainers/containers), and/or [uv](https://docs.astral.sh/uv/) instead.
+
 # Demo: Train a small neural network in a Docker container
 
 Docker enables portability and reproducibility of a codebase. This repository serves as an example for training neural networks in Docker containers, as well as running GUI applications.
